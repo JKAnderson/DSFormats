@@ -6,7 +6,7 @@ namespace DSFormats
     public static class DCX
     {
         public static byte[] Decompress(byte[] data)
-        { 
+        {
             BinaryReaderEx br = new BinaryReaderEx(data, true);
             br.AssertASCII("DCX\0");
             br.AssertInt32(0x10000);

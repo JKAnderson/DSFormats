@@ -7,7 +7,6 @@ namespace DSFormats
     {
         public Dictionary<int, string> strings;
         public List<TEXIEntry> textures;
-        public Dictionary<int, SCDPEntry> scdpEntries;
         public Dictionary<int, SHAPEntry> shapEntries;
         public Dictionary<int, CTRLEntry> ctrlEntries;
         public Dictionary<int, ANIKEntry> anikEntries;
@@ -38,13 +37,13 @@ namespace DSFormats
             int ctprOffset = readCTPR(br);
             int anipOffset = readANIP(br);
             int intpOffset = readINTP(br);
-            scdpEntries = readSCDP(br);
+            int scdpOffset = readSCDP(br);
             shapEntries = readSHAP(br, dsr, strings, textures, shprOffset);
             ctrlEntries = readCTRL(br, strings, ctprOffset);
             anikEntries = readANIK(br, strings, intpOffset, anipOffset);
             anioEntries = readANIO(br, anikEntries);
             animEntries = readANIM(br, strings, anioEntries);
-            scdkEntries = readSCDK(br, strings, scdpEntries);
+            scdkEntries = readSCDK(br, strings, scdpOffset);
             scdoEntries = readSCDO(br, strings, scdkEntries);
             scdlEntries = readSCDL(br, strings, scdoEntries);
             dlgoEntries = readDLGO(br, strings, shapEntries, ctrlEntries);
@@ -156,31 +155,13 @@ namespace DSFormats
             return position;
         }
 
-        private static Dictionary<int, SCDPEntry> readSCDP(BinaryReaderEx br)
+        private static int readSCDP(BinaryReaderEx br)
         {
             readSectionHeaderSingle(br, "SCDP", out int entrySize);
-
-            int startPosition = br.Position;
-            Dictionary<int, SCDPEntry> scdpEntries = new Dictionary<int, SCDPEntry>();
-            for (int i = 0; i < entrySize / 8; i++)
-            {
-                int offset = br.Position - startPosition;
-                scdpEntries[offset] = new SCDPEntry(br);
-            }
-
+            int position = br.Position;
+            br.Skip(entrySize);
             br.Pad(0x10);
-            return scdpEntries;
-        }
-
-        public class SCDPEntry
-        {
-            public int Unknown1, Unknown2;
-
-            public SCDPEntry(BinaryReaderEx br)
-            {
-                Unknown1 = br.ReadInt32();
-                Unknown2 = br.ReadInt32();
-            }
+            return position;
         }
 
         private static Dictionary<int, SHAPEntry> readSHAP(BinaryReaderEx br, bool dsr, Dictionary<int, string> strings, List<TEXIEntry> textures, int shprOffset)
@@ -255,26 +236,34 @@ namespace DSFormats
 
         public class ShapeDialog : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4, Unk5, Unk6;
-            public int Unk7, Unk8, Unk9;
+            public byte[] Raw;
+            public short Unk1, Unk2, Unk3, Unk4, Unk5, Unk6, Unk7, Unk8, Unk9;
 
             public ShapeDialog(BinaryReaderEx br)
             {
                 Type = "Dialog";
-                Unk1 = br.ReadInt16();
-                Unk2 = br.ReadInt16();
-                Unk3 = br.ReadInt16();
-                Unk4 = br.ReadInt16();
-                Unk5 = br.ReadInt16();
-                Unk6 = br.ReadInt16();
-                Unk7 = br.ReadInt32();
-                Unk8 = br.ReadInt32();
-                Unk9 = br.ReadInt32();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16(); // +00
+                Unk2 = br.ReadInt16(); // +02
+                Unk3 = br.ReadInt16(); // +04
+                Unk4 = br.ReadInt16(); // +06
+
+                Unk5 = br.ReadInt16(); // +08 + 00
+                Unk6 = br.ReadInt16(); // +08 + 02
+                br.ReadInt16(); // +08 + 04
+                br.ReadInt16(); // +08 + 06
+                br.ReadByte(); // +08 + 12
+                br.ReadByte(); // +08 + 13
+                br.ReadByte(); // +08 + 1C
+                br.ReadInt16(); // +08 + 20
+                br.ReadInt16(); // +08 + 22
+                br.ReadInt32(); // +08 + 24*/
             }
         }
 
         public class ShapeScrollText : SHAPEntry
         {
+            public byte[] Raw;
             public short Unk1, Unk2, Unk3, Unk4;
             public int Unk5, Unk6, Unk7, Unk8, Unk9, Unk10, Unk11, Unk12, Unk13, Unk14, Unk15;
             public short Unk16;
@@ -282,7 +271,8 @@ namespace DSFormats
             public ShapeScrollText(BinaryReaderEx br)
             {
                 Type = "ScrollText";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -297,22 +287,24 @@ namespace DSFormats
                 Unk13 = br.ReadInt32();
                 Unk14 = br.ReadInt32();
                 Unk15 = br.ReadInt32();
-                Unk16 = br.ReadInt16();
+                Unk16 = br.ReadInt16();*/
             }
         }
 
         public class ShapeText : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4;
             public int Unk5, Unk6, Unk7;
             public short Unk8, Unk9;
             public int Unk10, Unk11, Unk12;
-            public short Unk13, Unk14, Unk15;
+            public short Unk13, Unk14, Unk15;*/
 
             public ShapeText(BinaryReaderEx br)
             {
                 Type = "Text";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -330,7 +322,7 @@ namespace DSFormats
                 {
                     Unk14 = br.ReadInt16();
                     Unk15 = br.ReadInt16();
-                }
+                }*/
             }
         }
 
@@ -343,7 +335,7 @@ namespace DSFormats
             public byte Unk11;
             public int Unk12;
             public byte Unk13, Unk14, Unk15, Unk16;
-            public string Texture;
+            public TEXIEntry Texture;
 
             public ShapeSprite(BinaryReaderEx br, bool dsr, List<TEXIEntry> textures)
             {
@@ -371,38 +363,47 @@ namespace DSFormats
                 Unk14 = br.ReadByte();  // +21
                 Unk15 = br.ReadByte();  // +22
                 Unk16 = br.ReadByte();  // +23
+
+                if (TexiIndex == -1)
+                    Texture = null;
+                else
+                    Texture = textures[TexiIndex];
             }
         }
 
         public class ShapeMonoRect : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4;
             public int Unk5, Unk6;
-            public short Unk7, Unk8;
+            public short Unk7, Unk8;*/
 
             public ShapeMonoRect(BinaryReaderEx br)
             {
                 Type = "MonoRect";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
                 Unk5 = br.ReadInt32();
                 Unk6 = br.ReadInt32();
                 Unk7 = br.ReadInt16();
-                Unk8 = br.ReadInt16();
+                Unk8 = br.ReadInt16();*/
             }
         }
 
         public class ShapeGouraudRect : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4;
-            public int Unk5, Unk6, Unk7, Unk8, Unk9;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4;
+            public int Unk5, Unk6, Unk7, Unk8, Unk9;*/
 
             public ShapeGouraudRect(BinaryReaderEx br)
             {
                 Type = "GouraudRect";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -410,20 +411,22 @@ namespace DSFormats
                 Unk6 = br.ReadInt32();
                 Unk7 = br.ReadInt32();
                 Unk8 = br.ReadInt32();
-                Unk9 = br.ReadInt32();
+                Unk9 = br.ReadInt32();*/
             }
         }
 
         public class ShapeMonoFrame : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4, Unk5, Unk6;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4, Unk5, Unk6;
             public int Unk7;
-            public byte Unk8, Unk9, Unk10, Unk11;
+            public byte Unk8, Unk9, Unk10, Unk11;*/
 
             public ShapeMonoFrame(BinaryReaderEx br)
             {
                 Type = "MonoFrame";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -433,23 +436,25 @@ namespace DSFormats
                 Unk8 = br.ReadByte();
                 Unk9 = br.ReadByte();
                 Unk10 = br.ReadByte();
-                Unk11 = br.ReadByte();
+                Unk11 = br.ReadByte();*/
             }
         }
 
         public class ShapeGouraudSprite : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4;
             public int Unk5, Unk6;
             public short Unk7, Unk8;
             public int Unk9;
             public short Unk10, Unk11, Unk12, Unk13;
-            public int Unk14;
+            public int Unk14;*/
 
             public ShapeGouraudSprite(BinaryReaderEx br)
             {
                 Type = "GouraudSprite";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -462,23 +467,25 @@ namespace DSFormats
                 Unk11 = br.ReadInt16();
                 Unk12 = br.ReadInt16();
                 Unk13 = br.ReadInt16();
-                Unk14 = br.ReadInt32();
+                Unk14 = br.ReadInt32();*/
             }
         }
 
         public class ShapeMask : SHAPEntry
         {
-            public short Unk1, Unk2, Unk3, Unk4;
+            public byte[] Raw;
+            /*public short Unk1, Unk2, Unk3, Unk4;
             public byte Unk5, Unk6;
             public short Unk7;
             public int Unk8, Unk9;
             public short Unk10;
-            public byte Unk11;
+            public byte Unk11;*/
 
             public ShapeMask(BinaryReaderEx br)
             {
                 Type = "Mask";
-                Unk1 = br.ReadInt16();
+                Raw = br.ReadBytes(64);
+                /*Unk1 = br.ReadInt16();
                 Unk2 = br.ReadInt16();
                 Unk3 = br.ReadInt16();
                 Unk4 = br.ReadInt16();
@@ -488,7 +495,7 @@ namespace DSFormats
                 Unk8 = br.ReadInt32();
                 Unk9 = br.ReadInt32();
                 Unk10 = br.ReadInt16();
-                Unk11 = br.ReadByte();
+                Unk11 = br.ReadByte();*/
             }
         }
         #endregion
@@ -593,23 +600,20 @@ namespace DSFormats
         {
             public string Name;
             public int Unk2, Unk3;
-            public float[] INTP;
-            public byte ANIP;
+            public int INTPOffset, ANIPOffset;
 
             public ANIKEntry(BinaryReaderEx br, Dictionary<int, string> strings, int intpOffset, int anipOffset)
             {
                 int nameOffset = br.ReadInt32();
                 Unk2 = br.ReadInt32();
                 Unk3 = br.ReadInt32();
-                int intpEntryOffset = br.ReadInt32();
-                int anipEntryOffset = br.ReadInt32();
+                INTPOffset = br.ReadInt32();
+                ANIPOffset = br.ReadInt32();
                 br.AssertInt32(0);
                 br.AssertInt32(0);
                 br.AssertInt32(0);
 
                 Name = strings[nameOffset];
-                INTP = br.GetSingles(intpOffset + intpEntryOffset, 4);
-                ANIP = br.GetByte(anipOffset + anipEntryOffset);
             }
         }
 
@@ -693,7 +697,7 @@ namespace DSFormats
             }
         }
 
-        private static Dictionary<int, SCDKEntry> readSCDK(BinaryReaderEx br, Dictionary<int, string> strings, Dictionary<int, SCDPEntry> scdpEntries)
+        private static Dictionary<int, SCDKEntry> readSCDK(BinaryReaderEx br, Dictionary<int, string> strings, int scdpOffset)
         {
             readSectionHeader(br, "SCDK", out int entrySize, out int entryCount);
 
@@ -702,7 +706,7 @@ namespace DSFormats
             for (int i = 0; i < entryCount; i++)
             {
                 int offset = br.Position - startPosition;
-                scdkEntries[offset] = new SCDKEntry(br, strings, scdpEntries);
+                scdkEntries[offset] = new SCDKEntry(br, strings, scdpOffset);
             }
 
             br.Pad(0x10);
@@ -712,23 +716,22 @@ namespace DSFormats
         public class SCDKEntry
         {
             public string Name;
-            public int Unk2, Unk3, Unk4;
-            public SCDPEntry SCDP;
-            public int Unk6, Unk7, Unk8;
+            public int Unk2, Unk4;
+            public int SCDP;
+            public int Unk6;
 
-            public SCDKEntry(BinaryReaderEx br, Dictionary<int, string> strings, Dictionary<int, SCDPEntry> scdpEntries)
+            public SCDKEntry(BinaryReaderEx br, Dictionary<int, string> strings, int scdpOffset)
             {
                 int nameOffset = br.ReadInt32();
                 Unk2 = br.ReadInt32();
                 br.AssertInt32(1);
                 Unk4 = br.ReadInt32();
-                int scdpOffset = br.ReadInt32();
+                SCDP = br.ReadInt32();
                 Unk6 = br.ReadInt32();
                 br.AssertInt32(0);
                 br.AssertInt32(0);
 
                 Name = strings[nameOffset];
-                SCDP = scdpEntries[scdpOffset];
             }
         }
 

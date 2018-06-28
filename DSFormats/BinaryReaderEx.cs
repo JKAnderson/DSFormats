@@ -168,7 +168,9 @@ namespace DSFormats
         public string ReadShiftJISLengthPrefixed(byte delimiter)
         {
             int length = ReadInt32();
-            string result = readChars(ShiftJIS, length);
+            string result = "";
+            if (length > 0)
+                result = readChars(ShiftJIS, length);
             AssertByte(delimiter);
             Pad(4);
             return result;

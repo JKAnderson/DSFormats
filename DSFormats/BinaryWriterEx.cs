@@ -77,6 +77,12 @@ namespace DSFormats
             writeEndian(bytes);
         }
 
+        public void WriteInt32s(int[] values)
+        {
+            foreach (int value in values)
+                WriteInt32(value);
+        }
+
         public void ReserveInt32(string name)
         {
             if (reservations.ContainsKey(name))
@@ -106,10 +112,7 @@ namespace DSFormats
         public void WriteSingles(float[] values)
         {
             foreach (float value in values)
-            {
-                byte[] bytes = BitConverter.GetBytes(value);
-                writeEndian(bytes);
-            }
+                WriteSingle(value);
         }
 
         private void writeChars(string text, Encoding encoding, bool terminate)
@@ -134,7 +137,8 @@ namespace DSFormats
         {
             byte[] bytes = ShiftJIS.GetBytes(text);
             WriteInt32(bytes.Length);
-            WriteBytes(bytes);
+            if (bytes.Length > 0)
+                WriteBytes(bytes);
             WriteByte(delimiter);
             Pad(4);
         }

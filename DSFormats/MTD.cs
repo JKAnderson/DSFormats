@@ -229,7 +229,7 @@ namespace DSFormats
 
         public class ExternalEntry
         {
-            private int unk1, unk2, unk3, unk4, unk5, unk6, unk7;
+            private int unk2, unk5, unk6, unk7;
             public string Name;
             public int ShaderDataIndex;
 
@@ -238,12 +238,12 @@ namespace DSFormats
                 return new ExternalEntry(br);
             }
 
-            public ExternalEntry(BinaryReaderEx br)
+            private ExternalEntry(BinaryReaderEx br)
             {
-                unk1 = br.ReadInt32();
+                br.AssertInt32(0);
                 unk2 = br.ReadInt32();
-                unk3 = br.ReadInt32();
-                unk4 = br.ReadInt32();
+                br.AssertInt32(0x2000);
+                br.AssertInt32(3);
                 unk5 = br.ReadInt32();
                 Name = br.ReadShiftJISLengthPrefixed(0x35);
                 unk6 = br.ReadInt32();
@@ -253,10 +253,10 @@ namespace DSFormats
 
             public void Write(BinaryWriterEx bw)
             {
-                bw.WriteInt32(unk1);
+                bw.WriteInt32(0);
                 bw.WriteInt32(unk2);
-                bw.WriteInt32(unk3);
-                bw.WriteInt32(unk4);
+                bw.WriteInt32(0x2000);
+                bw.WriteInt32(3);
                 bw.WriteInt32(unk5);
                 bw.WriteShiftJISLengthPrefixed(Name, 0x35);
                 bw.WriteInt32(unk6);

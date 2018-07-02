@@ -63,7 +63,6 @@
     <Compile Include="BinaryWriterEx.cs" />
     <Compile Include="BND.cs" />
     <Compile Include="DCX.cs" />
-    <Compile Include="DRBRaw.cs" />
     <Compile Include="DRB.cs" />
     <Compile Include="MTD.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

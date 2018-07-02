@@ -38,7 +38,7 @@ namespace DSFormats
             int anipOffset = readANIP(br);
             int intpOffset = readINTP(br);
             int scdpOffset = readSCDP(br);
-            shapEntries = readSHAP(br, dsr, strings, textures, shprOffset);
+            shapEntries = readSHAP(br, dsr, strings, shprOffset);
             ctrlEntries = readCTRL(br, strings, ctprOffset);
             anikEntries = readANIK(br, strings, intpOffset, anipOffset);
             anioEntries = readANIO(br, anikEntries);
@@ -164,7 +164,7 @@ namespace DSFormats
             return position;
         }
 
-        private static Dictionary<int, SHAPEntry> readSHAP(BinaryReaderEx br, bool dsr, Dictionary<int, string> strings, List<TEXIEntry> textures, int shprOffset)
+        private static Dictionary<int, SHAPEntry> readSHAP(BinaryReaderEx br, bool dsr, Dictionary<int, string> strings, int shprOffset)
         {
             readSectionHeader(br, "SHAP", out int entrySize, out int entryCount);
 
@@ -190,7 +190,7 @@ namespace DSFormats
                 else if (type == "Text")
                     entry = new ShapeText(br);
                 else if (type == "Sprite")
-                    entry = new ShapeSprite(br, dsr, textures);
+                    entry = new ShapeSprite(br, dsr);
                 else if (type == "MonoRect")
                     entry = new ShapeMonoRect(br);
                 else if (type == "GouraudRect")
@@ -335,9 +335,8 @@ namespace DSFormats
             public byte Unk11;
             public int Unk12;
             public byte Unk13, Unk14, Unk15, Unk16;
-            public TEXIEntry Texture;
 
-            public ShapeSprite(BinaryReaderEx br, bool dsr, List<TEXIEntry> textures)
+            public ShapeSprite(BinaryReaderEx br, bool dsr)
             {
                 Type = "Sprite";
                 Unk1 = br.ReadInt16(); // +00 ? Unused?
@@ -363,11 +362,6 @@ namespace DSFormats
                 Unk14 = br.ReadByte();  // +21
                 Unk15 = br.ReadByte();  // +22
                 Unk16 = br.ReadByte();  // +23
-
-                if (TexiIndex == -1)
-                    Texture = null;
-                else
-                    Texture = textures[TexiIndex];
             }
         }
 

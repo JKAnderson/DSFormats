@@ -39,8 +39,8 @@ namespace DSFormats
 
         public void Pad(int align)
         {
-            if (ms.Position % align > 0)
-                ms.Position += align - (ms.Position % align);
+            while (ms.Position % align > 0)
+                WriteByte(0);
         }
 
         private void writeEndian(byte[] bytes)

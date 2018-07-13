@@ -11,27 +11,35 @@ namespace DSFormats
         private static readonly Encoding ShiftJIS = Encoding.GetEncoding("shift-jis");
         private static readonly Encoding UTF16 = Encoding.Unicode;
 
-        private MemoryStream ms;
+        private Stream stream;
         private BinaryWriter bw;
         private Dictionary<string, long> reservations;
 
         public bool BigEndian = false;
         public int Position
         {
-            get { return (int)ms.Position; }
-            set { ms.Position = value; }
+            get { return (int)stream.Position; }
+            set { stream.Position = value; }
         }
 
-        public BinaryWriterEx(bool bigEndian)
+        public BinaryWriterEx(bool bigEndian) : this(bigEndian, new MemoryStream()) { }
+
+        public BinaryWriterEx(bool bigEndian, Stream stream)
         {
-            ms = new MemoryStream();
-            bw = new BinaryWriter(ms);
+            this.stream = stream;
+            bw = new BinaryWriter(stream);
             reservations = new Dictionary<string, long>();
             BigEndian = bigEndian;
         }
 
-        public byte[] Finish()
+        public void Finish()
         {
+            bw.Close();
+        }
+
+        public byte[] FinishBytes()
+        {
+            MemoryStream ms = stream as MemoryStream;
             byte[] result = ms.ToArray();
             bw.Close();
             return result;
@@ -39,7 +47,7 @@ namespace DSFormats
 
         public void Pad(int align)
         {
-            while (ms.Position % align > 0)
+            while (stream.Position % align > 0)
                 WriteByte(0);
         }
 
@@ -88,7 +96,7 @@ namespace DSFormats
             if (reservations.ContainsKey(name))
                 throw new ArgumentException("Key already reserved: " + name);
 
-            reservations[name] = ms.Position;
+            reservations[name] = stream.Position;
             WriteInt32(0);
         }
 
@@ -97,10 +105,10 @@ namespace DSFormats
             if (!reservations.ContainsKey(name))
                 throw new ArgumentException("Key was not reserved: " + name);
 
-            long pos = ms.Position;
-            ms.Position = reservations[name];
+            long pos = stream.Position;
+            stream.Position = reservations[name];
             WriteInt32(value);
-            ms.Position = pos;
+            stream.Position = pos;
         }
 
         public void WriteSingle(float value)

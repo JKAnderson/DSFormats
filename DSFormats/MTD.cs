@@ -17,7 +17,7 @@ namespace DSFormats
 
         private MTD(byte[] bytes)
         {
-            BinaryReaderEx br = new BinaryReaderEx(bytes, false);
+            BinaryReaderEx br = new BinaryReaderEx(false, bytes);
             br.AssertInt32(0);
             int fileSize = br.ReadInt32();
             br.AssertInt32(0);
@@ -124,7 +124,7 @@ namespace DSFormats
             bw.FillInt32("FileSize", position - 8);
             bw.FillInt32("DataSize", position - 0x4C);
 
-            return bw.Finish();
+            return bw.FinishBytes();
         }
 
         public class InternalEntry

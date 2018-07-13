@@ -7,7 +7,21 @@ namespace DSFormats
     {
         public static byte[] Decompress(byte[] data)
         {
-            BinaryReaderEx br = new BinaryReaderEx(data, true);
+            BinaryReaderEx br = new BinaryReaderEx(true, data);
+            return decompress(br);
+        }
+
+        public static byte[] Decompress(string path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            {
+                BinaryReaderEx br = new BinaryReaderEx(true, stream);
+                return decompress(br);
+            }
+        }
+
+        private static byte[] decompress(BinaryReaderEx br)
+        {
             br.AssertASCII("DCX\0");
             br.AssertInt32(0x10000);
             br.AssertInt32(0x18);
@@ -46,6 +60,23 @@ namespace DSFormats
 
         public static byte[] Compress(byte[] data)
         {
+            BinaryWriterEx bw = new BinaryWriterEx(true);
+            compress(data, bw);
+            return bw.FinishBytes();
+        }
+
+        public static byte[] Compress(byte[] data, string path)
+        {
+            using (FileStream stream = File.Create(path))
+            {
+                BinaryWriterEx bw = new BinaryWriterEx(true, stream);
+                compress(data, bw);
+                return bw.FinishBytes();
+            }
+        }
+
+        private static void compress(byte[] data, BinaryWriterEx bw)
+        {
             byte[] compressed;
             using (MemoryStream cmpStream = new MemoryStream())
             using (MemoryStream dcmpStream = new MemoryStream(data))
@@ -56,7 +87,6 @@ namespace DSFormats
                 compressed = cmpStream.ToArray();
             }
 
-            BinaryWriterEx bw = new BinaryWriterEx(true);
             bw.WriteASCII("DCX\0");
             bw.WriteInt32(0x10000);
             bw.WriteInt32(0x18);
@@ -80,8 +110,6 @@ namespace DSFormats
             bw.WriteByte(0x78);
             bw.WriteByte(0xDA);
             bw.WriteBytes(compressed);
-
-            return bw.Finish();
         }
     }
 }

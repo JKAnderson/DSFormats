@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace DSFormats
 {
@@ -9,14 +10,23 @@ namespace DSFormats
         private byte format;
         public List<BNDEntry> Files;
 
-        public static BND Unpack(byte[] bytes)
+        public static BND Read(byte[] bytes)
         {
-            return new BND(bytes);
+            BinaryReaderEx br = new BinaryReaderEx(false, bytes);
+            return new BND(br);
         }
 
-        private BND(byte[] bytes)
+        public static BND Read(string path)
         {
-            BinaryReaderEx br = new BinaryReaderEx(bytes, false);
+            using (FileStream stream = File.OpenRead(path))
+            {
+                BinaryReaderEx br = new BinaryReaderEx(false, stream);
+                return new BND(br);
+            }
+        }
+
+        private BND(BinaryReaderEx br)
+        {
             br.AssertASCII("BND3");
             // FaceGen.fgbnd: 09G17X51
             // Everything else (that I'm checking): 07D7R6\0\0
@@ -57,9 +67,25 @@ namespace DSFormats
             }
         }
 
-        public byte[] Repack()
+        public byte[] Write()
         {
             BinaryWriterEx bw = new BinaryWriterEx(false);
+            write(bw);
+            return bw.FinishBytes();
+        }
+
+        public void Write(string path)
+        {
+            using (FileStream stream = File.Create(path))
+            {
+                BinaryWriterEx bw = new BinaryWriterEx(false, stream);
+                write(bw);
+                bw.Finish();
+            }
+        }
+
+        private void write(BinaryWriterEx bw)
+        {
             bw.WriteASCII("BND3");
             bw.WriteASCII(signature);
             bw.WriteByte(format);
@@ -100,8 +126,6 @@ namespace DSFormats
                 bw.WriteBytes(entry.Bytes);
                 bw.Pad(0x10);
             }
-
-            return bw.Finish();
         }
     }
 

@@ -11,21 +11,23 @@ namespace DSFormats
         private static readonly Encoding ShiftJIS = Encoding.GetEncoding("shift-jis");
         private static readonly Encoding UTF16 = Encoding.Unicode;
 
-        private MemoryStream ms;
+        private Stream stream;
         private BinaryReader br;
-        public bool BigEndian = false;
 
+        public bool BigEndian = false;
         public int Position
         {
-            get { return (int)ms.Position; }
-            set { ms.Position = value; }
+            get { return (int)stream.Position; }
+            set { stream.Position = value; }
         }
 
-        public BinaryReaderEx(byte[] input, bool bigEndian)
+        public BinaryReaderEx(bool bigEndian, byte[] input) : this(bigEndian, new MemoryStream(input)) { }
+
+        public BinaryReaderEx(bool bigEndian, Stream stream)
         {
-            ms = new MemoryStream(input);
-            br = new BinaryReader(ms);
             BigEndian = bigEndian;
+            this.stream = stream;
+            br = new BinaryReader(stream);
         }
 
         private byte[] readEndian(int length)
@@ -38,13 +40,13 @@ namespace DSFormats
 
         public void Pad(int align)
         {
-            if (ms.Position % align > 0)
-                ms.Position += align - (ms.Position % align);
+            if (stream.Position % align > 0)
+                stream.Position += align - (stream.Position % align);
         }
 
         public void Skip(int count)
         {
-            ms.Position += count;
+            stream.Position += count;
         }
 
         public byte ReadByte()
@@ -59,19 +61,19 @@ namespace DSFormats
 
         public byte GetByte(int offset)
         {
-            long pos = ms.Position;
-            ms.Position = offset;
+            long pos = stream.Position;
+            stream.Position = offset;
             byte result = ReadByte();
-            ms.Position = pos;
+            stream.Position = pos;
             return result;
         }
 
         public byte[] GetBytes(int offset, int length)
         {
-            long pos = ms.Position;
-            ms.Position = offset;
+            long pos = stream.Position;
+            stream.Position = offset;
             byte[] result = ReadBytes(length);
-            ms.Position = pos;
+            stream.Position = pos;
             return result;
         }
 
@@ -92,10 +94,10 @@ namespace DSFormats
 
         public short GetInt16(int offset)
         {
-            long position = ms.Position;
-            ms.Position = offset;
+            long position = stream.Position;
+            stream.Position = offset;
             short result = ReadInt16();
-            ms.Position = position;
+            stream.Position = position;
             return result;
         }
 
@@ -127,10 +129,10 @@ namespace DSFormats
 
         public float[] GetSingles(int offset, int count)
         {
-            long position = ms.Position;
-            ms.Position = offset;
+            long position = stream.Position;
+            stream.Position = offset;
             float[] result = ReadSingles(count);
-            ms.Position = position;
+            stream.Position = position;
             return result;
         }
 
@@ -178,10 +180,10 @@ namespace DSFormats
 
         public string GetShiftJIS(int offset)
         {
-            long pos = ms.Position;
-            ms.Position = offset;
+            long pos = stream.Position;
+            stream.Position = offset;
             string result = ReadShiftJIS();
-            ms.Position = pos;
+            stream.Position = pos;
             return result;
         }
 

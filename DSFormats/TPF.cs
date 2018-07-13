@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace DSFormats
 {
@@ -6,14 +7,23 @@ namespace DSFormats
     {
         public List<TPFEntry> Files;
 
-        public static TPF Unpack(byte[] bytes)
+        public static TPF Read(byte[] bytes)
         {
-            return new TPF(bytes);
+            BinaryReaderEx br = new BinaryReaderEx(false, bytes);
+            return new TPF(br);
         }
 
-        private TPF(byte[] bytes)
+        public static TPF Read(string path)
         {
-            BinaryReaderEx br = new BinaryReaderEx(bytes, false);
+            using (FileStream stream = File.OpenRead(path))
+            {
+                BinaryReaderEx br = new BinaryReaderEx(false, stream);
+                return new TPF(br);
+            }
+        }
+
+        private TPF(BinaryReaderEx br)
+        {
             br.AssertASCII("TPF\0");
             int totalFileSize = br.ReadInt32();
             int fileCount = br.ReadInt32();
@@ -43,9 +53,24 @@ namespace DSFormats
             }
         }
 
-        public byte[] Repack()
+        public byte[] Write()
         {
             BinaryWriterEx bw = new BinaryWriterEx(false);
+            return bw.FinishBytes();
+        }
+
+        public void Write(string path)
+        {
+            using (FileStream stream = File.Create(path))
+            {
+                BinaryWriterEx bw = new BinaryWriterEx(false, stream);
+                write(bw);
+                bw.Finish();
+            }
+        }
+
+        private void write(BinaryWriterEx bw)
+        {
             bw.WriteASCII("TPF\0");
             bw.ReserveInt32("DataSize");
             bw.WriteInt32(Files.Count);
@@ -78,8 +103,6 @@ namespace DSFormats
                 bw.Pad(0x10);
             }
             bw.FillInt32("DataSize", bw.Position - dataStart);
-
-            return bw.Finish();
         }
     }
 

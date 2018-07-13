@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace DSFormats
 {
@@ -8,26 +9,48 @@ namespace DSFormats
         public List<BDTEntry> Files;
         private int flag;
 
-        public static BDT Unpack(byte[] bhdBytes, byte[] bdtBytes)
+        public static BDT Read(byte[] bhdBytes, byte[] bdtBytes)
         {
-            return new BDT(bhdBytes, bdtBytes);
+            BinaryReaderEx bhdReader = new BinaryReaderEx(false, bhdBytes);
+            BinaryReaderEx bdtReader = new BinaryReaderEx(false, bdtBytes);
+            return new BDT(bhdReader, bdtReader);
         }
 
-        private BDT(byte[] bhdBytes, byte[] bdtBytes)
+        public static BDT Read(byte[] bhdBytes, string bdtPath)
         {
-            BHD bhd = new BHD(bhdBytes);
+            using (FileStream bdtStream = File.OpenRead(bdtPath))
+            {
+                BinaryReaderEx bhdReader = new BinaryReaderEx(false, bhdBytes);
+                BinaryReaderEx bdtReader = new BinaryReaderEx(false, bdtStream);
+                return new BDT(bhdReader, bdtReader);
+            }
+        }
+
+        public static BDT Read(string bhdPath, string bdtPath)
+        {
+            using (FileStream bhdStream = File.OpenRead(bhdPath))
+            using (FileStream bdtStream = File.OpenRead(bdtPath))
+            {
+                BinaryReaderEx bhdReader = new BinaryReaderEx(false, bhdStream);
+                BinaryReaderEx bdtReader = new BinaryReaderEx(false, bdtStream);
+                return new BDT(bhdReader, bdtReader);
+            }
+        }
+
+        private BDT(BinaryReaderEx bhdReader, BinaryReaderEx bdtReader)
+        {
+            BHD bhd = new BHD(bhdReader);
             flag = bhd.Flag;
 
-            BinaryReaderEx br = new BinaryReaderEx(bdtBytes, false);
-            br.AssertASCII("BDF307D7R6\0\0");
-            br.AssertInt32(0);
+            bdtReader.AssertASCII("BDF307D7R6\0\0");
+            bdtReader.AssertInt32(0);
 
             Files = new List<BDTEntry>();
             for (int i = 0; i < bhd.Entries.Count; i++)
             {
                 BHDEntry bhdEntry = bhd.Entries[i];
                 string name = bhdEntry.Name;
-                byte[] data = br.GetBytes(bhdEntry.Offset, bhdEntry.Size);
+                byte[] data = bdtReader.GetBytes(bhdEntry.Offset, bhdEntry.Size);
 
                 BDTEntry bdtEntry = new BDTEntry
                 {
@@ -38,42 +61,71 @@ namespace DSFormats
             }
         }
 
-        public (byte[], byte[]) Repack()
+        public (byte[], byte[]) Write()
         {
-            BinaryWriterEx bhw = new BinaryWriterEx(false);
-            bhw.WriteASCII("BHF307D7R6\0\0");
-            bhw.WriteInt32(flag);
-            bhw.WriteInt32(Files.Count);
-            bhw.WriteInt32(0);
-            bhw.WriteInt32(0);
-            bhw.WriteInt32(0);
+            BinaryWriterEx bhdWriter = new BinaryWriterEx(false);
+            BinaryWriterEx bdtWriter = new BinaryWriterEx(false);
+            write(bhdWriter, bdtWriter);
+            return (bhdWriter.FinishBytes(), bdtWriter.FinishBytes());
+        }
 
-            BinaryWriterEx bdw = new BinaryWriterEx(false);
-            bdw.WriteASCII("BDF307D7R6\0\0");
-            bdw.WriteInt32(0);
+        public byte[] Write(string bdtPath)
+        {
+            using (FileStream bdtStream = File.Create(bdtPath))
+            {
+                BinaryWriterEx bhdWriter = new BinaryWriterEx(false);
+                BinaryWriterEx bdtWriter = new BinaryWriterEx(false, bdtStream);
+                write(bhdWriter, bdtWriter);
+                bdtWriter.Finish();
+                return bhdWriter.FinishBytes();
+            }
+        }
+
+        public void Write(string bhdPath, string bdtPath)
+        {
+            using (FileStream bhdStream = File.Create(bhdPath))
+            using (FileStream bdtStream = File.Create(bdtPath))
+            {
+                BinaryWriterEx bhdWriter = new BinaryWriterEx(false, bhdStream);
+                BinaryWriterEx bdtWriter = new BinaryWriterEx(false, bdtStream);
+                write(bhdWriter, bdtWriter);
+                bhdWriter.Finish();
+                bdtWriter.Finish();
+            }
+        }
+
+        private void write(BinaryWriterEx bhdWriter, BinaryWriterEx bdtWriter)
+        {
+            bhdWriter.WriteASCII("BHF307D7R6\0\0");
+            bhdWriter.WriteInt32(flag);
+            bhdWriter.WriteInt32(Files.Count);
+            bhdWriter.WriteInt32(0);
+            bhdWriter.WriteInt32(0);
+            bhdWriter.WriteInt32(0);
+
+            bdtWriter.WriteASCII("BDF307D7R6\0\0");
+            bdtWriter.WriteInt32(0);
 
             for (int i = 0; i < Files.Count; i++)
             {
                 BDTEntry file = Files[i];
-                bhw.WriteInt32(0x40);
-                bhw.WriteInt32(file.Bytes.Length);
-                bhw.WriteInt32(bdw.Position);
-                bhw.WriteInt32(i);
-                bhw.ReserveInt32($"FileName{i}");
-                bhw.WriteInt32(file.Bytes.Length);
+                bhdWriter.WriteInt32(0x40);
+                bhdWriter.WriteInt32(file.Bytes.Length);
+                bhdWriter.WriteInt32(bdtWriter.Position);
+                bhdWriter.WriteInt32(i);
+                bhdWriter.ReserveInt32($"FileName{i}");
+                bhdWriter.WriteInt32(file.Bytes.Length);
 
-                bdw.WriteBytes(file.Bytes);
-                bdw.Pad(0x10);
+                bdtWriter.WriteBytes(file.Bytes);
+                bdtWriter.Pad(0x10);
             }
 
             for (int i = 0; i < Files.Count; i++)
             {
                 BDTEntry file = Files[i];
-                bhw.FillInt32($"FileName{i}", bhw.Position);
-                bhw.WriteShiftJIS(file.Filename, true);
+                bhdWriter.FillInt32($"FileName{i}", bhdWriter.Position);
+                bhdWriter.WriteShiftJIS(file.Filename, true);
             }
-
-            return (bhw.Finish(), bdw.Finish());
         }
 
         private class BHD
@@ -81,9 +133,8 @@ namespace DSFormats
             public List<BHDEntry> Entries;
             public int Flag;
 
-            public BHD(byte[] bytes)
+            public BHD(BinaryReaderEx br)
             {
-                BinaryReaderEx br = new BinaryReaderEx(bytes, false);
                 br.AssertASCII("BHF307D7R6\0\0");
                 Flag = br.ReadInt32();
                 if (Flag != 0x54 && Flag != 0x74)

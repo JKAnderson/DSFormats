@@ -25,7 +25,7 @@ namespace DSFormats
 
         private DRB(byte[] bytes, bool dsr)
         {
-            BinaryReaderEx br = new BinaryReaderEx(bytes, false);
+            BinaryReaderEx br = new BinaryReaderEx(false, bytes);
             br.AssertASCII("DRB\0");
             br.AssertInt32(0);
             br.AssertInt32(0);

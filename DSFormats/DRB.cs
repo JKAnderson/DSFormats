@@ -18,7 +18,7 @@ namespace DSFormats
         public Dictionary<int, DLGOEntry> dlgoEntries;
         public Dictionary<int, DLGEntry> dlgEntries;
 
-        public static DRB Unpack(byte[] bytes, bool dsr)
+        public static DRB Read(byte[] bytes, bool dsr)
         {
             return new DRB(bytes, dsr);
         }

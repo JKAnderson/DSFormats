@@ -8,7 +8,7 @@ namespace DSFormats
     {
         private string signature;
         private byte format;
-        public List<BNDEntry> Files;
+        public List<File> Files;
 
         public static BND Read(byte[] bytes)
         {
@@ -18,7 +18,7 @@ namespace DSFormats
 
         public static BND Read(string path)
         {
-            using (FileStream stream = File.OpenRead(path))
+            using (FileStream stream = System.IO.File.OpenRead(path))
             {
                 BinaryReaderEx br = new BinaryReaderEx(false, stream);
                 return new BND(br);
@@ -43,7 +43,7 @@ namespace DSFormats
             br.AssertInt32(0);
             br.AssertInt32(0);
 
-            Files = new List<BNDEntry>();
+            Files = new List<File>();
             for (int i = 0; i < fileCount; i++)
             {
                 br.AssertInt32(0x40);
@@ -57,13 +57,13 @@ namespace DSFormats
                 string name = br.GetShiftJIS(fileNameOffset);
                 byte[] data = br.GetBytes(fileOffset, fileSize);
 
-                BNDEntry entry = new BNDEntry
+                File file = new File
                 {
-                    Filename = name,
+                    Name = name,
                     ID = id,
                     Bytes = data
                 };
-                Files.Add(entry);
+                Files.Add(file);
             }
         }
 
@@ -76,7 +76,7 @@ namespace DSFormats
 
         public void Write(string path)
         {
-            using (FileStream stream = File.Create(path))
+            using (FileStream stream = System.IO.File.Create(path))
             {
                 BinaryWriterEx bw = new BinaryWriterEx(false, stream);
                 write(bw);
@@ -100,20 +100,20 @@ namespace DSFormats
 
             for (int i = 0; i < Files.Count; i++)
             {
-                BNDEntry entry = Files[i];
+                File file = Files[i];
                 bw.WriteInt32(0x40);
-                bw.WriteInt32(entry.Bytes.Length);
+                bw.WriteInt32(file.Bytes.Length);
                 bw.ReserveInt32($"FileData{i}");
-                bw.WriteInt32(entry.ID);
+                bw.WriteInt32(file.ID);
                 bw.ReserveInt32($"FileName{i}");
-                bw.WriteInt32(entry.Bytes.Length);
+                bw.WriteInt32(file.Bytes.Length);
             }
 
             for (int i = 0; i < Files.Count; i++)
             {
-                BNDEntry entry = Files[i];
+                File file = Files[i];
                 bw.FillInt32($"FileName{i}", bw.Position);
-                bw.WriteShiftJIS(entry.Filename, true);
+                bw.WriteShiftJIS(file.Name, true);
             }
             // Do not include padding
             bw.FillInt32($"NameEnd", bw.Position);
@@ -121,18 +121,18 @@ namespace DSFormats
 
             for (int i = 0; i < Files.Count; i++)
             {
-                BNDEntry entry = Files[i];
+                File file = Files[i];
                 bw.FillInt32($"FileData{i}", bw.Position);
-                bw.WriteBytes(entry.Bytes);
+                bw.WriteBytes(file.Bytes);
                 bw.Pad(0x10);
             }
         }
-    }
 
-    public class BNDEntry
-    {
-        public string Filename;
-        public int ID;
-        public byte[] Bytes;
+        public class File
+        {
+            public string Name;
+            public int ID;
+            public byte[] Bytes;
+        }
     }
 }

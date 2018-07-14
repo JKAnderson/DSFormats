@@ -65,13 +65,13 @@ namespace DSFormats
             return bw.FinishBytes();
         }
 
-        public static byte[] Compress(byte[] data, string path)
+        public static void Compress(byte[] data, string path)
         {
             using (FileStream stream = File.Create(path))
             {
                 BinaryWriterEx bw = new BinaryWriterEx(true, stream);
                 compress(data, bw);
-                return bw.FinishBytes();
+                bw.Finish();
             }
         }
 

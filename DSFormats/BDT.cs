@@ -6,7 +6,7 @@ namespace DSFormats
 {
     public class BDT
     {
-        public List<BDTEntry> Files;
+        public List<File> Files;
         private int flag;
 
         public static BDT Read(byte[] bhdBytes, byte[] bdtBytes)
@@ -18,7 +18,7 @@ namespace DSFormats
 
         public static BDT Read(byte[] bhdBytes, string bdtPath)
         {
-            using (FileStream bdtStream = File.OpenRead(bdtPath))
+            using (FileStream bdtStream = System.IO.File.OpenRead(bdtPath))
             {
                 BinaryReaderEx bhdReader = new BinaryReaderEx(false, bhdBytes);
                 BinaryReaderEx bdtReader = new BinaryReaderEx(false, bdtStream);
@@ -28,8 +28,8 @@ namespace DSFormats
 
         public static BDT Read(string bhdPath, string bdtPath)
         {
-            using (FileStream bhdStream = File.OpenRead(bhdPath))
-            using (FileStream bdtStream = File.OpenRead(bdtPath))
+            using (FileStream bhdStream = System.IO.File.OpenRead(bhdPath))
+            using (FileStream bdtStream = System.IO.File.OpenRead(bdtPath))
             {
                 BinaryReaderEx bhdReader = new BinaryReaderEx(false, bhdStream);
                 BinaryReaderEx bdtReader = new BinaryReaderEx(false, bdtStream);
@@ -45,19 +45,19 @@ namespace DSFormats
             bdtReader.AssertASCII("BDF307D7R6\0\0");
             bdtReader.AssertInt32(0);
 
-            Files = new List<BDTEntry>();
-            for (int i = 0; i < bhd.Entries.Count; i++)
+            Files = new List<File>();
+            for (int i = 0; i < bhd.FileHeaders.Count; i++)
             {
-                BHDEntry bhdEntry = bhd.Entries[i];
-                string name = bhdEntry.Name;
-                byte[] data = bdtReader.GetBytes(bhdEntry.Offset, bhdEntry.Size);
+                FileHeader fileHeader = bhd.FileHeaders[i];
+                string name = fileHeader.Name;
+                byte[] data = bdtReader.GetBytes(fileHeader.Offset, fileHeader.Size);
 
-                BDTEntry bdtEntry = new BDTEntry
+                File file = new File
                 {
-                    Filename = name,
+                    Name = name,
                     Bytes = data
                 };
-                Files.Add(bdtEntry);
+                Files.Add(file);
             }
         }
 
@@ -71,7 +71,7 @@ namespace DSFormats
 
         public byte[] Write(string bdtPath)
         {
-            using (FileStream bdtStream = File.Create(bdtPath))
+            using (FileStream bdtStream = System.IO.File.Create(bdtPath))
             {
                 BinaryWriterEx bhdWriter = new BinaryWriterEx(false);
                 BinaryWriterEx bdtWriter = new BinaryWriterEx(false, bdtStream);
@@ -83,8 +83,8 @@ namespace DSFormats
 
         public void Write(string bhdPath, string bdtPath)
         {
-            using (FileStream bhdStream = File.Create(bhdPath))
-            using (FileStream bdtStream = File.Create(bdtPath))
+            using (FileStream bhdStream = System.IO.File.Create(bhdPath))
+            using (FileStream bdtStream = System.IO.File.Create(bdtPath))
             {
                 BinaryWriterEx bhdWriter = new BinaryWriterEx(false, bhdStream);
                 BinaryWriterEx bdtWriter = new BinaryWriterEx(false, bdtStream);
@@ -108,7 +108,7 @@ namespace DSFormats
 
             for (int i = 0; i < Files.Count; i++)
             {
-                BDTEntry file = Files[i];
+                File file = Files[i];
                 bhdWriter.WriteInt32(0x40);
                 bhdWriter.WriteInt32(file.Bytes.Length);
                 bhdWriter.WriteInt32(bdtWriter.Position);
@@ -122,15 +122,15 @@ namespace DSFormats
 
             for (int i = 0; i < Files.Count; i++)
             {
-                BDTEntry file = Files[i];
+                File file = Files[i];
                 bhdWriter.FillInt32($"FileName{i}", bhdWriter.Position);
-                bhdWriter.WriteShiftJIS(file.Filename, true);
+                bhdWriter.WriteShiftJIS(file.Name, true);
             }
         }
 
         private class BHD
         {
-            public List<BHDEntry> Entries;
+            public List<FileHeader> FileHeaders;
             public int Flag;
 
             public BHD(BinaryReaderEx br)
@@ -145,7 +145,7 @@ namespace DSFormats
                 br.AssertInt32(0);
                 br.AssertInt32(0);
 
-                Entries = new List<BHDEntry>();
+                FileHeaders = new List<FileHeader>();
                 for (int i = 0; i < fileCount; i++)
                 {
                     br.AssertInt32(0x40);
@@ -157,28 +157,28 @@ namespace DSFormats
                     br.AssertInt32(fileSize);
 
                     string name = br.GetShiftJIS(fileNameOffset);
-                    BHDEntry entry = new BHDEntry()
+                    FileHeader fileHeader = new FileHeader()
                     {
                         Name = name,
                         Offset = fileOffset,
                         Size = fileSize,
                     };
-                    Entries.Add(entry);
+                    FileHeaders.Add(fileHeader);
                 }
             }
         }
 
-        private class BHDEntry
+        private class FileHeader
         {
             public string Name;
             public int Offset;
             public int Size;
         }
-    }
 
-    public class BDTEntry
-    {
-        public string Filename;
-        public byte[] Bytes;
+        public class File
+        {
+            public string Name;
+            public byte[] Bytes;
+        }
     }
 }

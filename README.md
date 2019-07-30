@@ -1,3 +1,5 @@
+# DEPRECATED
+Only use this if you need it to build an old project. Use [SoulsFormats](https://github.com/JKAnderson/SoulsFormats) instead.
 
 # DSFormats
 An extremely unfinished .NET library for reading and writing Dark Souls 1 file formats.
